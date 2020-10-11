@@ -1,21 +1,20 @@
 #ifndef S11N_INCLUDE_ME_S11N_RAW_CODER_RAW_CODER_H
 #define S11N_INCLUDE_ME_S11N_RAW_CODER_RAW_CODER_H
+#include "../utils/common.h"
 #include "../utils/endianness_helper.h"
 #include "../utils/log2_floor_helper.h"
 #include "../utils/port.h"
 #include "builtin_types_helper.h"
 #include <cstdint>
 #include <memory>
-#include <type_traits>
 namespace me {
 namespace s11n {
-// helper to avoid static_assert trigger directly
-template <typename> struct DeferredFalse : std::false_type {};
 // all unsupported types will fall into this Coder
 template <typename T, typename Enable = void> struct RawCoder {
   static void CompileError() {
-    static_assert(DeferredFalse<T>::value,
-                  "fall through default coder, unsupported type.");
+    static_assert(
+        DeferredFalse<T>::value,
+        "unsupported raw type, you probably should use PlayloadCoder instead");
   }
   static uint8_t *Write(const T &value, uint8_t *ptr) {
     CompileError();
@@ -74,54 +73,6 @@ template <typename T> struct RawCoder<T *> {
     return nullptr;
   }
   static std::size_t Size(const T &value) {
-    CompileError();
-    return 0;
-  }
-};
-
-// shared_ptrs are not supported
-template <typename T> struct RawCoder<std::shared_ptr<T>> {
-  static void CompileError() {
-    static_assert(
-        DeferredFalse<T>::value,
-        "shared_ptr is not supported, serializable should owns something, not "
-        "shares something.");
-  }
-  static uint8_t *Write(const T &value, uint8_t *ptr) {
-    CompileError();
-    return nullptr;
-  }
-  static const uint8_t *Read(T &out, const uint8_t *ptr) {
-    CompileError();
-    return nullptr;
-  }
-  static std::size_t Size(const T &value) {
-    CompileError();
-    return 0;
-  }
-};
-
-// non-polymorphic type do not supported
-template <typename T, typename... TS>
-struct RawCoder<std::unique_ptr<T, TS...>,
-                typename std::enable_if<!std::is_polymorphic<T>::value>::type> {
-  static void CompileError() {
-    static_assert(
-        DeferredFalse<T>::value,
-        "due to ownership principle, ptr of a non polymorphic type makes "
-        "little sense, please issue us if you has a reasonable case");
-  }
-  static uint8_t *Write(const std::unique_ptr<T, TS...> &unique_ptr,
-                        uint8_t *ptr) {
-    CompileError();
-    return nullptr;
-  }
-  static const uint8_t *Read(std::unique_ptr<T, TS...> &unique_ptr,
-                             const uint8_t *ptr) {
-    CompileError();
-    return nullptr;
-  }
-  static std::size_t Size(const std::unique_ptr<T, TS...> &unique_ptr) {
     CompileError();
     return 0;
   }
