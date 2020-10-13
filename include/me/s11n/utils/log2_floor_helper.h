@@ -78,7 +78,7 @@ constexpr
     Log2FloorNonZero() {
   return Shift + Log2FloorNonZero<(Value >> Shift), Shift / 2>();
 }
-template <std::size_t Value, std::size_t Shift = (sizeof(std::size_t) * 8 / 2)>
+template <std::size_t Value, std::size_t Shift>
 constexpr
     typename std::enable_if<Value != 0 && Shift != 0 && ((Value >> Shift) == 0),
                             std::size_t>::type

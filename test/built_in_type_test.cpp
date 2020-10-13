@@ -1,20 +1,24 @@
 #include <gtest/gtest.h>
 #include <limits>
-#include <me/s11n/raw_coder/raw_coder.h>
+#include <me/s11n/raw_coder/type_coder.h>
 namespace {
 class BuiltInTypeTest : public testing::Test {};
-uint8_t buffer[8];
-template <typename T> std::pair<T, std::size_t> RawTest(T t, std::size_t size) {
+uint8_t buffer[64];
+template <typename T>
+std::tuple<T, std::size_t, uint8_t *, const uint8_t *>
+RawTest(T t, std::size_t size) {
   T out;
-  me::s11n::WriteRaw(t, buffer);
-  me::s11n::ReadRaw(out, buffer);
-  return {out, me::s11n::SizeRaw(t)};
+  auto ptr1 = me::s11n::Encode(t, buffer);
+  auto ptr2 = me::s11n::Decode(out, buffer);
+  return {out, me::s11n::Capacity(t), ptr1, ptr2};
 }
 #define TestRaw(i, n)                                                          \
   {                                                                            \
-    auto pair = RawTest(i, n);                                                 \
-    ASSERT_EQ(i, pair.first);                                                  \
-    ASSERT_EQ(n, pair.second);                                                 \
+    auto tuple = RawTest(i, n);                                                \
+    ASSERT_EQ(i, std::get<0>(tuple));                                          \
+    ASSERT_EQ(n, std::get<1>(tuple));                                          \
+    ASSERT_EQ(buffer + n, std::get<2>(tuple));                                 \
+    ASSERT_EQ(buffer + n, std::get<3>(tuple));                                 \
   }
 TEST_F(BuiltInTypeTest, integal_test) {
   unsigned short i = 0;
@@ -52,8 +56,8 @@ TEST_F(BuiltInTypeTest, enum_test) {
   };
   Foo foo = Foo::Three;
   Foo out;
-  me::s11n::WriteRaw(foo, buffer);
-  me::s11n::ReadRaw(out, buffer);
+  me::s11n::Encode(foo, buffer);
+  me::s11n::Decode(out, buffer);
   switch (out) {
   case Foo::One:
     ASSERT_FALSE(true);
@@ -67,6 +71,152 @@ TEST_F(BuiltInTypeTest, enum_test) {
   default:
     ASSERT_FALSE(true);
     break;
+  }
+}
+
+TEST_F(BuiltInTypeTest, array_test) {
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    unsigned int s[] = {0, 1, 127, 128};
+    ASSERT_EQ(me::s11n::Capacity(s), 6);
+    ASSERT_EQ(me::s11n::Encode(s, buffer), buffer + 6);
+    unsigned int t[4] = {0, 0, 0, 0};
+    ASSERT_EQ(me::s11n::Decode(t, buffer), buffer + 6);
+    for (int index = 0; index < 4; index++) {
+      ASSERT_EQ(s[index], t[index]);
+    }
+  }
+
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    int s[] = {0, 1, 127, 128};
+    ASSERT_EQ(me::s11n::Capacity(s), 7);
+    ASSERT_EQ(me::s11n::Encode(s, buffer), buffer + 7);
+    int t[4] = {0, 0, 0, 0};
+    ASSERT_EQ(me::s11n::Decode(t, buffer), buffer + 7);
+    for (int index = 0; index < 4; index++) {
+      ASSERT_EQ(s[index], t[index]);
+    }
+  }
+
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    float s[] = {0.1, 1.0, 10.0};
+    ASSERT_EQ(me::s11n::Capacity(s), 13);
+    ASSERT_EQ(me::s11n::Encode(s, buffer), buffer + 13);
+    float t[] = {0, 0, 0};
+    ASSERT_EQ(me::s11n::Decode(t, buffer), buffer + 13);
+    for (int index = 0; index < 3; index++) {
+      ASSERT_EQ(s[index], t[index]) << "differ at index " << index;
+    }
+  }
+
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    unsigned int s[] = {0, 1, 127, 128};
+    ASSERT_EQ(me::s11n::Capacity(s), 6);
+    ASSERT_EQ(me::s11n::Encode(s, buffer), buffer + 6);
+    unsigned int t[4] = {0, 0, 0, 0};
+    ASSERT_EQ(me::s11n::Decode(t, buffer), buffer + 6);
+    for (int index = 0; index < 4; index++) {
+      ASSERT_EQ(s[index], t[index]);
+    }
+  }
+}
+
+TEST_F(BuiltInTypeTest, vector_test) {
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    std::vector<unsigned int> s = {0, 1, 127, 128};
+    ASSERT_EQ(me::s11n::Capacity(s), 6);
+    ASSERT_EQ(me::s11n::Encode(s, buffer), buffer + 6);
+    std::vector<unsigned int> t;
+    ASSERT_EQ(me::s11n::Decode(t, buffer), buffer + 6);
+    ASSERT_EQ(t, s);
+  }
+
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    std::vector<int> s = {0, 1, 127, 128};
+    ASSERT_EQ(me::s11n::Capacity(s), 7);
+    ASSERT_EQ(me::s11n::Encode(s, buffer), buffer + 7);
+    std::vector<int> t;
+    ASSERT_EQ(me::s11n::Decode(t, buffer), buffer + 7);
+    ASSERT_EQ(t, s);
+  }
+
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    std::vector<float> s = {0.01, 0.1, 1.1, 10.1};
+    ASSERT_EQ(me::s11n::Capacity(s), 17);
+    ASSERT_EQ(me::s11n::Encode(s, buffer), buffer + 17);
+    std::vector<float> t;
+    ASSERT_EQ(me::s11n::Decode(t, buffer), buffer + 17);
+    ASSERT_EQ(t, s);
+  }
+}
+
+TEST_F(BuiltInTypeTest, string_test) {
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    std::string s = "Hello, world!";
+    ASSERT_EQ(me::s11n::Capacity(s), 14);
+    ASSERT_EQ(me::s11n::Encode(s, buffer), buffer + 14);
+    std::string t;
+    ASSERT_EQ(me::s11n::Decode(t, buffer), buffer + 14);
+    ASSERT_EQ(t, s);
+  }
+
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    std::string s = u8"你好,世界!";
+    ASSERT_EQ(me::s11n::Capacity(s), 15);
+    ASSERT_EQ(me::s11n::Encode(s, buffer), buffer + 15);
+    std::string t;
+    ASSERT_EQ(me::s11n::Decode(t, buffer), buffer + 15);
+    ASSERT_EQ(t, s);
+  }
+}
+
+TEST_F(BuiltInTypeTest, pair_test) {
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    std::pair<int, unsigned> s = {127, 128};
+    ASSERT_EQ(me::s11n::Capacity(s), 4);
+    ASSERT_EQ(me::s11n::Encode(s, buffer), buffer + 4);
+    std::pair<int, unsigned> t;
+    ASSERT_EQ(me::s11n::Decode(t, buffer), buffer + 4);
+    ASSERT_EQ(t, s);
+  }
+}
+
+TEST_F(BuiltInTypeTest, map_test) {
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    std::map<int, unsigned> s = {{127, 128}, {0, 1}};
+    ASSERT_EQ(me::s11n::Capacity(s), 7);
+    ASSERT_EQ(me::s11n::Encode(s, buffer), buffer + 7);
+    std::map<int, unsigned> t;
+    ASSERT_EQ(me::s11n::Decode(t, buffer), buffer + 7);
+    ASSERT_EQ(t, s);
+  }
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    std::unordered_map<int, unsigned> s = {{127, 128}, {0, 1}};
+    ASSERT_EQ(me::s11n::Capacity(s), 7);
+    ASSERT_EQ(me::s11n::Encode(s, buffer), buffer + 7);
+    std::unordered_map<int, unsigned> t;
+    ASSERT_EQ(me::s11n::Decode(t, buffer), buffer + 7);
+    ASSERT_EQ(t, s);
+  }
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    std::unordered_map<std::string, float> s = {{"one.one", 1.1}, {"one.two", 1.2}};
+    ASSERT_EQ(me::s11n::Capacity(s), 25);
+    ASSERT_EQ(me::s11n::Encode(s, buffer), buffer + 25);
+    std::unordered_map<std::string, float> t;
+    ASSERT_EQ(me::s11n::Decode(t, buffer), buffer + 25);
+    ASSERT_EQ(t, s);
   }
 }
 
