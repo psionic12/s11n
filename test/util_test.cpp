@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <me/s11n/utils/common.h>
 #include <me/s11n/utils/endianness_helper.h>
 #include <me/s11n/utils/log2_floor_helper.h>
 #include <me/s11n/utils/size_cache.h>
@@ -116,5 +117,19 @@ TEST_F(UtilsTest, size_cache_test) {
   ASSERT_EQ(3, me::s11n::SizeCache<>::Get(i));
   ASSERT_EQ(2, me::s11n::SizeCache<>::Get(i[0]));
   ASSERT_EQ(1, me::s11n::SizeCache<>::Get(i[1]));
+}
+
+TEST_F(UtilsTest, skip_varint_test) {
+  uint8_t buffer[10];
+  memset(buffer, 0, 10);
+
+  buffer[0] = 0b01111111;
+  ASSERT_EQ(me::s11n::SkipVarint(buffer), buffer + 1);
+
+  buffer[0] = 0b11111111;
+  buffer[1] = 0b11111111;
+  buffer[2] = 0b01111111;
+  buffer[3] = 0b11111111;
+  ASSERT_EQ(me::s11n::SkipVarint(buffer), buffer + 3);
 }
 } // namespace

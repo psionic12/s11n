@@ -1,15 +1,16 @@
 #ifndef S11N_INCLUDE_ME_S11N_TYPE_CODER_TYPE_CODER_H
 #define S11N_INCLUDE_ME_S11N_TYPE_CODER_TYPE_CODER_H
-#include "../utils/common.h"
-#include "../utils/endianness_helper.h"
-#include "../utils/log2_floor_helper.h"
-#include "../utils/port.h"
-#include "../utils/size_cache.h"
 #include "builtin_types_helper.h"
+#include "utils/common.h"
+#include "utils/endianness_helper.h"
+#include "utils/log2_floor_helper.h"
+#include "utils/port.h"
+#include "utils/size_cache.h"
 #include <cstdint>
 #include <memory>
 #include <typeindex>
 #include <unordered_map>
+#include <map>
 namespace me {
 namespace s11n {
 // all unsupported types will fall into this Coder
@@ -123,8 +124,8 @@ struct TypeCoder<T, typename std::enable_if<GraininessWrapper<T>::type ==
         return ptr + i + 1;
       }
     }
-    out = 0;
-    return nullptr;
+    out = res64;
+    return ptr + 2;
   }
   static std::size_t Size(const T &value) {
     // same as VarintSizeXX in protobuf
@@ -333,7 +334,7 @@ struct TypeCoder<std::vector<T, TS...>,
 template <> struct TypeCoder<std::string> {
   static uint8_t *Write(const std::string &s, uint8_t *ptr) {
     ptr = Encode(s.size(), ptr);
-    std::copy(s.begin(), s.begin() + s.size(), ptr);
+    std::copy(s.begin(), s.end(), ptr);
     return ptr + s.size();
   }
   static const uint8_t *Read(std::string &out, const uint8_t *ptr) {
@@ -352,17 +353,25 @@ template <> struct TypeCoder<std::string> {
 // coder for std::pair
 template <typename T1, typename T2> struct TypeCoder<std::pair<T1, T2>> {
   static uint8_t *Write(const std::pair<T1, T2> &value, uint8_t *ptr) {
+    ptr = Encode(SizeCache<>::Get(value), ptr);
     ptr = Encode(value.first, ptr);
     ptr = Encode(value.second, ptr);
     return ptr;
   }
   static const uint8_t *Read(std::pair<T1, T2> &out, const uint8_t *ptr) {
+    ptr = SkipVarint(ptr);
     ptr = Decode(out.first, ptr);
     ptr = Decode(out.second, ptr);
     return ptr;
   }
+  static std::size_t PayloadSize(const std::pair<T1, T2> &value) {
+    std::size_t payload_size = Capacity(value.first) + Capacity(value.second);
+    SizeCache<>::Set(value, payload_size);
+    return payload_size;
+  }
   static std::size_t Size(const std::pair<T1, T2> &value) {
-    return Capacity(value.first) + Capacity(value.second);
+    auto payload_size = PayloadSize(value);
+    return payload_size + Capacity(payload_size);
   }
 };
 
@@ -371,9 +380,9 @@ template <template <typename, typename, typename...> class MAP, typename KEY,
           typename VALUE, typename... TS>
 struct TypeCoder<
     MAP<KEY, VALUE, TS...>,
-    typename std::enable_if_t<
+    typename std::enable_if<
         is_specialization<MAP<KEY, VALUE, TS...>, std::unordered_map>::value ||
-        is_specialization<MAP<KEY, VALUE, TS...>, std::map>::value>> {
+        is_specialization<MAP<KEY, VALUE, TS...>, std::map>::value>::type> {
   static uint8_t *Write(const MAP<KEY, VALUE, TS...> &map, uint8_t *ptr) {
     ptr = Encode(SizeCache<>::Get(map), ptr);
     for (const std::pair<KEY, VALUE> &pair : map) {

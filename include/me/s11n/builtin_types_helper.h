@@ -1,5 +1,5 @@
-#ifndef S11N_INCLUDE_ME_S11N_RAW_CODER_BUILTIN_TYPES_HELPER_H
-#define S11N_INCLUDE_ME_S11N_RAW_CODER_BUILTIN_TYPES_HELPER_H
+#ifndef S11N_INCLUDE_ME_S11N_BUILTIN_TYPES_HELPER_H
+#define S11N_INCLUDE_ME_S11N_BUILTIN_TYPES_HELPER_H
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -102,4 +102,4 @@ struct GraininessWrapper<T*> {
 };
 } // namespace serialization
 } // namespace me
-#endif // S11N_INCLUDE_ME_S11N_RAW_CODER_BUILTIN_TYPES_HELPER_H
+#endif // S11N_INCLUDE_ME_S11N_BUILTIN_TYPES_HELPER_H
