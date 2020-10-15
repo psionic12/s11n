@@ -279,6 +279,7 @@ struct TypeCoder<std::vector<T, TS...>,
   static const uint8_t *Read(std::vector<T> &out, const uint8_t *ptr) {
     std::size_t size;
     ptr = Decode(size, ptr);
+    out.resize(0);
     out.reserve(size); // allocate mininum space
     auto end = ptr + size;
     while (ptr != end) {
@@ -315,6 +316,7 @@ struct TypeCoder<std::vector<T, TS...>,
     std::size_t size;
     ptr = Decode(size, ptr);
     auto counts = size / sizeof(T);
+    out.clear();
     out.resize(counts);
     return EndianHelper<sizeof(T), ME_LITTLE_ENDIAN>::LoadPacked(
         (uint8_t *)out.data(), ptr, counts);
@@ -340,6 +342,7 @@ template <> struct TypeCoder<std::string> {
   static const uint8_t *Read(std::string &out, const uint8_t *ptr) {
     std::size_t size;
     ptr = Decode(size, ptr);
+    out.clear();
     out.resize(size);
     std::copy(ptr, ptr + size, &out[0]);
     return ptr + size;
@@ -394,6 +397,7 @@ struct TypeCoder<
     std::size_t size;
     ptr = Decode(size, ptr);
     std::pair<KEY, VALUE> pair;
+    out.clear();
     auto end = ptr + size;
     while (ptr < end) {
       ptr = Decode(pair, ptr);
