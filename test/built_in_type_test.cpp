@@ -160,7 +160,7 @@ TEST_F(BuiltInTypeTest, array_test) {
 
   {
     me::s11n::SizeCache<>::WriteGuard guard;
-    int s[] =  {-1, -11, -111, -1111, -11111};
+    int s[] = {-1, -11, -111, -1111, -11111};
     buffer.ReCapacity(10);
     ASSERT_EQ(me::s11n::Capacity(s), 10);
     ASSERT_EQ(me::s11n::Encode(s, buffer.Data()), buffer.Data() + 10);
@@ -203,6 +203,16 @@ TEST_F(BuiltInTypeTest, vector_test) {
     ASSERT_EQ(me::s11n::Decode(t, buffer.Data()), buffer.Data() + 17);
     ASSERT_EQ(t, s);
   }
+
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    std::vector<int> s = {};
+    ASSERT_EQ(me::s11n::Capacity(s), 1);
+    ASSERT_EQ(me::s11n::Encode(s, buffer.Data()), buffer.Data() + 1);
+    std::vector<int> t = {1, 2, 3, 4};
+    ASSERT_EQ(me::s11n::Decode(t, buffer.Data()), buffer.Data() + 1);
+    ASSERT_EQ(t, s);
+  }
 }
 
 TEST_F(BuiltInTypeTest, string_test) {
@@ -224,6 +234,16 @@ TEST_F(BuiltInTypeTest, string_test) {
     ASSERT_EQ(me::s11n::Encode(s, buffer.Data()), buffer.Data() + 15);
     std::string t;
     ASSERT_EQ(me::s11n::Decode(t, buffer.Data()), buffer.Data() + 15);
+    ASSERT_EQ(t, s);
+  }
+
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    std::string s;
+    ASSERT_EQ(me::s11n::Capacity(s), 1);
+    ASSERT_EQ(me::s11n::Encode(s, buffer.Data()), buffer.Data() + 1);
+    std::string t = "not empty";
+    ASSERT_EQ(me::s11n::Decode(t, buffer.Data()), buffer.Data() + 1);
     ASSERT_EQ(t, s);
   }
 }
@@ -269,6 +289,15 @@ TEST_F(BuiltInTypeTest, map_test) {
     ASSERT_EQ(me::s11n::Encode(s, buffer.Data()), buffer.Data() + 27);
     std::unordered_map<std::string, float> t;
     ASSERT_EQ(me::s11n::Decode(t, buffer.Data()), buffer.Data() + 27);
+    ASSERT_EQ(t, s);
+  }
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    std::map<std::string, std::string> s = {};
+    ASSERT_EQ(me::s11n::Capacity(s), 1);
+    ASSERT_EQ(me::s11n::Encode(s, buffer.Data()), buffer.Data() + 1);
+    std::map<std::string, std::string> t = {{"a", "b"}};
+    ASSERT_EQ(me::s11n::Decode(t, buffer.Data()), buffer.Data() + 1);
     ASSERT_EQ(t, s);
   }
 }
