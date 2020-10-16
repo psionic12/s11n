@@ -336,7 +336,7 @@ struct TypeCoder<std::vector<T, TS...>,
 template <> struct TypeCoder<std::string> {
   static uint8_t *Write(const std::string &s, uint8_t *ptr) {
     ptr = Encode(s.size(), ptr);
-    std::copy(s.begin(), s.end(), ptr);
+    memcpy(ptr, &s[0], s.size());
     return ptr + s.size();
   }
   static const uint8_t *Read(std::string &out, const uint8_t *ptr) {
@@ -344,7 +344,7 @@ template <> struct TypeCoder<std::string> {
     ptr = Decode(size, ptr);
     out.clear();
     out.resize(size);
-    std::copy(ptr, ptr + size, &out[0]);
+    memcpy(&out[0], ptr, size);
     return ptr + size;
   }
   static std::size_t Size(const std::string &s) {
