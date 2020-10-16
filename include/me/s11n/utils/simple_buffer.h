@@ -7,6 +7,8 @@ class SimpleBuffer {
 public:
   uint8_t *Data() { return buffer_; }
   const uint8_t *Data() const { return buffer_; }
+  uint8_t *End() { return buffer_ + size_; }
+  const uint8_t *End() const { return buffer_ + size_; }
   void ReCapacity(std::size_t n) {
     if (size_ < n) {
       delete[] buffer_;
