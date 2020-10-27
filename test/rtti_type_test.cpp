@@ -9,7 +9,7 @@ TEST_F(RttiTest, rtti_test) {
   std::unique_ptr<Base> s(new Base());
   auto size = me::s11n::Capacity(s);
   ASSERT_EQ(size, 9);
-  buffer.ReCapacity(size);
+  buffer.ReSize(size);
   ASSERT_EQ(me::s11n::Encode(s, buffer.Data()), buffer.Data() + size);
   std::unique_ptr<Base> t(nullptr);
   ASSERT_EQ(me::s11n::Decode(t, buffer.Data()), buffer.Data() + size);
@@ -19,7 +19,7 @@ TEST_F(RttiTest, rtti_test) {
   s.reset(new DerivedOne());
   size = me::s11n::Capacity(s);
   ASSERT_EQ(size, 15);
-  buffer.ReCapacity(size);
+  buffer.ReSize(size);
   ASSERT_EQ(me::s11n::Encode(s, buffer.Data()), buffer.Data() + size);
   ASSERT_EQ(me::s11n::Decode(t, buffer.Data()), buffer.Data() + size);
   ASSERT_EQ(t->Test(), s->Test());
@@ -28,7 +28,7 @@ TEST_F(RttiTest, rtti_test) {
   s.reset(new DerivedTwo());
   size = me::s11n::Capacity(s);
   ASSERT_EQ(size, 15);
-  buffer.ReCapacity(size);
+  buffer.ReSize(size);
   ASSERT_EQ(me::s11n::Encode(s, buffer.Data()), buffer.Data() + size);
   ASSERT_EQ(me::s11n::Decode(t, buffer.Data()), buffer.Data() + size);
   ASSERT_EQ(t->Test(), s->Test());
@@ -37,7 +37,7 @@ TEST_F(RttiTest, rtti_test) {
   s.reset(nullptr);
   size = me::s11n::Capacity(s);
   ASSERT_EQ(size, 1);
-  buffer.ReCapacity(size);
+  buffer.ReSize(size);
   ASSERT_EQ(me::s11n::Encode(s, buffer.Data()), buffer.Data() + size);
   ASSERT_EQ(me::s11n::Decode(t, buffer.Data()), buffer.Data() + size);
   ASSERT_EQ(t.get(), nullptr);

@@ -10,7 +10,7 @@ std::tuple<T, std::size_t, uint8_t *, const uint8_t *>
 RawTest(T t, std::size_t size) {
   T out;
   auto cap = me::s11n::Capacity(t);
-  buffer.ReCapacity(cap);
+  buffer.ReSize(cap);
   auto ptr1 = me::s11n::Encode(t, buffer.Data());
   auto ptr2 = me::s11n::Decode(out, buffer.Data());
   return {out, cap, ptr1, ptr2};
@@ -53,22 +53,22 @@ TEST_F(BuiltInTypeTest, integal_test) {
 
   // size not match test
   unsigned short int short_i = 128;
-  buffer.ReCapacity(me::s11n::Capacity(short_i));
+  buffer.ReSize(me::s11n::Capacity(short_i));
   me::s11n::Encode(short_i, buffer.Data());
   unsigned long int long_i;
   me::s11n::Decode(long_i, buffer.Data());
   ASSERT_EQ(short_i, long_i);
 
   long_i = 0xFFFFFFFF;
-  buffer.ReCapacity(me::s11n::Capacity(long_i));
+  buffer.ReSize(me::s11n::Capacity(long_i));
   me::s11n::Encode(long_i, buffer.Data());
   me::s11n::Decode(short_i, buffer.Data());
   ASSERT_EQ(short_i, 0xFFFF);
 }
 
 TEST_F(BuiltInTypeTest, ill_form_test) {
-  buffer.ReCapacity(5);
-  memset(buffer.Data(), 0, buffer.Capacity());
+  buffer.ReSize(5);
+  memset(buffer.Data(), 0, buffer.Size());
   buffer.Data()[0] = 0b11111111;
   buffer.Data()[1] = 0b10000000;
   buffer.Data()[2] = 0b10000000;
@@ -89,7 +89,7 @@ TEST_F(BuiltInTypeTest, enum_test) {
   };
   Foo foo = Foo::Three;
   Foo out;
-  buffer.ReCapacity(me::s11n::Capacity(foo));
+  buffer.ReSize(me::s11n::Capacity(foo));
   me::s11n::Encode(foo, buffer.Data());
   me::s11n::Decode(out, buffer.Data());
   switch (out) {
@@ -109,7 +109,7 @@ TEST_F(BuiltInTypeTest, enum_test) {
 }
 
 TEST_F(BuiltInTypeTest, array_test) {
-  buffer.ReCapacity(32);
+  buffer.ReSize(32);
   {
     me::s11n::SizeCache<>::WriteGuard guard;
     unsigned int s[] = {0, 1, 127, 128};
@@ -161,7 +161,7 @@ TEST_F(BuiltInTypeTest, array_test) {
   {
     me::s11n::SizeCache<>::WriteGuard guard;
     int s[] = {-1, -11, -111, -1111, -11111};
-    buffer.ReCapacity(10);
+    buffer.ReSize(10);
     ASSERT_EQ(me::s11n::Capacity(s), 10);
     ASSERT_EQ(me::s11n::Encode(s, buffer.Data()), buffer.Data() + 10);
     int t[5] = {0, 0, 0, 0, 0};
@@ -173,7 +173,7 @@ TEST_F(BuiltInTypeTest, array_test) {
 }
 
 TEST_F(BuiltInTypeTest, vector_test) {
-  buffer.ReCapacity(32);
+  buffer.ReSize(32);
   {
     me::s11n::SizeCache<>::WriteGuard guard;
     std::vector<unsigned int> s = {0, 1, 127, 128};
@@ -216,7 +216,7 @@ TEST_F(BuiltInTypeTest, vector_test) {
 }
 
 TEST_F(BuiltInTypeTest, string_test) {
-  buffer.ReCapacity(32);
+  buffer.ReSize(32);
   {
     me::s11n::SizeCache<>::WriteGuard guard;
     std::string s = "Hello, world!";
@@ -249,7 +249,7 @@ TEST_F(BuiltInTypeTest, string_test) {
 }
 
 TEST_F(BuiltInTypeTest, pair_test) {
-  buffer.ReCapacity(32);
+  buffer.ReSize(32);
   {
     me::s11n::SizeCache<>::WriteGuard guard;
     std::pair<int, unsigned> s = {127, 128};
@@ -262,7 +262,7 @@ TEST_F(BuiltInTypeTest, pair_test) {
 }
 
 TEST_F(BuiltInTypeTest, map_test) {
-  buffer.ReCapacity(32);
+  buffer.ReSize(32);
   {
     me::s11n::SizeCache<>::WriteGuard guard;
     std::map<int, unsigned> s = {{127, 128}, {0, 1}};

@@ -10,7 +10,7 @@ TEST_F(CustomTypeS11nTest, class_simulation) {
   me::s11n::SizeCache<>::WriteGuard guard;
   Foo foo;
   me::s11n::SimpleBuffer buffer;
-  buffer.ReCapacity(me::s11n::Capacity(foo));
+  buffer.ReSize(me::s11n::Capacity(foo));
   auto *ptr = me::s11n::Encode(foo, buffer.Data());
   ASSERT_EQ(ptr - buffer.Data(), me::s11n::Capacity(foo));
   Foo foo2;

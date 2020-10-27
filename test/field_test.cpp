@@ -52,7 +52,7 @@ TEST_F(FieldTest, skip_test) {
   size += me::s11n::FieldCapacity<0x4005>(f11);
 
   me::s11n::SimpleBuffer buffer;
-  buffer.ReCapacity(size);
+  buffer.ReSize(size);
   auto ptr = buffer.Data();
   ptr = me::s11n::EncodeField(0, f1, ptr);
   ptr = me::s11n::EncodeField(1, f2, ptr);
