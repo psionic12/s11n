@@ -302,4 +302,50 @@ TEST_F(BuiltInTypeTest, map_test) {
   }
 }
 
+TEST_F(BuiltInTypeTest, set_test) {
+  buffer.ReSize(32);
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    std::set<int> s = {127, 128, 0, 1};
+    ASSERT_EQ(me::s11n::Capacity(s), 7);
+    ASSERT_EQ(me::s11n::Encode(s, buffer.Data()), buffer.Data() + 7);
+    std::set<int> t;
+    ASSERT_EQ(me::s11n::Decode(t, buffer.Data()), buffer.Data() + 7);
+    ASSERT_EQ(t, s);
+  }
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    std::unordered_set<unsigned> s = {127, 128, 0, 1};
+    ASSERT_EQ(me::s11n::Capacity(s), 6);
+    ASSERT_EQ(me::s11n::Encode(s, buffer.Data()), buffer.Data() + 6);
+    std::unordered_set<unsigned> t;
+    ASSERT_EQ(me::s11n::Decode(t, buffer.Data()), buffer.Data() + 6);
+    ASSERT_EQ(t, s);
+  }
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    std::unordered_set<std::string> s = {
+        "The first Law: A robot may not injure a human being or, through "
+        "inaction, allow a human being to come to harm.",
+        "The second Law: A robot must obey the orders given it by human beings "
+        "except where such orders would conflict with the First Law.",
+        "The third Law: A robot must protect its own existence as long as such "
+        "protection does not conflict with the First or Second Law."};
+    ASSERT_EQ(me::s11n::Capacity(s), 374);
+    buffer.ReSize(374);
+    ASSERT_EQ(me::s11n::Encode(s, buffer.Data()), buffer.Data() + 374);
+    std::unordered_set<std::string> t;
+    ASSERT_EQ(me::s11n::Decode(t, buffer.Data()), buffer.Data() + 374);
+    ASSERT_EQ(t, s);
+  }
+  {
+    me::s11n::SizeCache<>::WriteGuard guard;
+    std::set<std::string> s = {};
+    ASSERT_EQ(me::s11n::Capacity(s), 1);
+    ASSERT_EQ(me::s11n::Encode(s, buffer.Data()), buffer.Data() + 1);
+    std::set<std::string> t = {"a", "b"};
+    ASSERT_EQ(me::s11n::Decode(t, buffer.Data()), buffer.Data() + 1);
+    ASSERT_EQ(t, s);
+  }
+}
 } // namespace

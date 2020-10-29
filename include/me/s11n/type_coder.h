@@ -7,10 +7,12 @@
 #include "utils/port.h"
 #include "utils/size_cache.h"
 #include <cstdint>
+#include <map>
 #include <memory>
+#include <set>
 #include <typeindex>
 #include <unordered_map>
-#include <map>
+#include <unordered_set>
 namespace me {
 namespace s11n {
 // all unsupported types will fall into this Coder
@@ -415,6 +417,47 @@ struct TypeCoder<
   }
   static std::size_t Size(const MAP<KEY, VALUE, TS...> &map) {
     auto payload_size = PayloadSize(map);
+    return payload_size + Capacity(payload_size);
+  }
+};
+
+// encoder for set/unordered_set which element is fixed
+template <template <typename, typename...> class SET, typename KEY,
+          typename... TS>
+struct TypeCoder<
+    SET<KEY, TS...>,
+    typename std::enable_if<
+        is_specialization<SET<KEY, TS...>, std::unordered_set>::value ||
+        is_specialization<SET<KEY, TS...>, std::set>::value>::type> {
+  static uint8_t *Write(const SET<KEY, TS...> &set, uint8_t *ptr) {
+    ptr = Encode(SizeCache<>::Get(set), ptr);
+    for (const auto &element : set) {
+      ptr = Encode(element, ptr);
+    }
+    return ptr;
+  }
+  static const uint8_t *Read(SET<KEY, TS...> &out, const uint8_t *ptr) {
+    std::size_t size;
+    ptr = Decode(size, ptr);
+    out.clear();
+    auto end = ptr + size;
+    while (ptr < end) {
+      KEY element;
+      ptr = Decode(element, ptr);
+      out.insert(element);
+    }
+    return ptr;
+  }
+  static std::size_t PayloadSize(const SET<KEY, TS...> &set) {
+    std::size_t payload_size = 0;
+    for (auto e : set) {
+      payload_size += Capacity(e);
+    }
+    SizeCache<>::Set(set, payload_size);
+    return payload_size;
+  }
+  static std::size_t Size(const SET<KEY, TS...> &set) {
+    auto payload_size = PayloadSize(set);
     return payload_size + Capacity(payload_size);
   }
 };
